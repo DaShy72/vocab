@@ -1,0 +1,214 @@
+{% extends 'words/base.html' %}
+{% block title %}Statistics{% endblock %}
+{% block head %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+   <style>
+        .filter-buttons {
+            margin-bottom: 20px;
+        }
+        .filter-buttons button {
+            margin-right: 10px;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            background: #1c2541;
+            color: white;
+            cursor: pointer;
+        }
+        .filter-buttons button.active {
+            background: #3a506b;
+        }
+    </style>
+{% endblock head %}
+{% block content %}
+
+<h2 class="h2 fw-bold mb-4 text-center text-white">📊 Learning Statistics</h2>
+
+<div class="row g-1">
+
+  <div class="col-12 col-md-12 col-lg-4">
+    <div class="card text-center shadow-sm">
+      <div class="card-body">
+        <h3 class="h5 text-secondary">Total Words</h3>
+        <p class="h2 fw-bold text-primary">{{ word_count }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-6 col-lg-4">
+    <div class="card text-center shadow-sm">
+      <div class="card-body">
+        <h3 class="h5 text-secondary">Nouns</h3>
+        <p class="h2 fw-bold text-success">{{ noun }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-6 col-lg-4">
+    <div class="card text-center shadow-sm">
+      <div class="card-body">
+        <h3 class="h5 text-secondary">Verbs</h3>
+        <p class="h2 fw-bold text-danger">{{ verb }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-6 col-lg-4">
+    <div class="card text-center shadow-sm">
+      <div class="card-body">
+        <h3 class="h5 text-secondary">Adjectives</h3>
+        <p class="h2 fw-bold text-warning">{{ adjective }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-6 col-lg-4">
+    <div class="card text-center shadow-sm">
+      <div class="card-body">
+        <h3 class="h5 text-secondary">Adverbs</h3>
+        <p class="h2 fw-bold text-purple">{{ adverb }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-6 col-lg-4">
+    <div class="card text-center shadow-sm">
+      <div class="card-body">
+        <h3 class="h5 text-secondary">Pronouns</h3>
+        <p class="h2 fw-bold text-pink">{{ pronoun }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-6 col-lg-12">
+    <div class="card text-center shadow-sm">
+      <div class="card-body">
+        <h3 class="h5 text-secondary">Other</h3>
+        <p class="h2 fw-bold text-muted">{{ other }}</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<div class="row">
+  <div class="col-12 col-sm-10 col-md-8 col-lg-6">
+    <canvas id="wordsChart" width="600" height="400"></canvas>
+  </div>
+  <div class="col-12 col-sm-10 col-md-8 col-lg-6">
+    <canvas id="lineChart" width="600" height="400"></canvas>
+  </div>
+</div>
+
+
+
+
+<div class="filter-buttons">
+    <button onclick="setFilter('week')" class="active">Неделя</button>
+    <button onclick="setFilter('month')">Месяц</button>
+    <button onclick="setFilter('all')">Всё время</button>
+</div>
+
+
+
+<script>
+    const allDates = {{ dates|safe }};
+    const allCounts = {{ counts|safe }};
+
+    const ctx = document.getElementById('wordsChart').getContext('2d');
+    const wordsChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: allDates,
+            datasets: [{
+                label: 'Выученные слова',
+                data: allCounts,
+                backgroundColor: 'rgba(28, 37, 65, 0.7)',
+                borderColor: 'rgba(28, 37, 65, 1)',
+                borderWidth: 2,
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: true },
+                title: { display: true, text: 'Количество слов по дням' }
+            },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
+    });
+
+    // Второй график (линия)
+    const ctx2 = document.getElementById('lineChart').getContext('2d');
+    const lineChart = new Chart(ctx2, {
+        type: 'line',
+        data: {
+            labels: allDates,
+            datasets: [{
+                label: 'Выученные слова за день',
+                data: allCounts,
+                fill: false,
+                borderColor: 'rgba(56, 163, 165, 1)',
+                tension: 0.3,
+                pointRadius: 4,
+                pointBackgroundColor: 'rgba(56, 163, 165, 1)'
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { title: { display: true, text: 'Слова по дням (линия)' } },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
+    });
+
+
+    function setFilter(type) {
+        // сбрасываем активную кнопку
+        document.querySelectorAll('.filter-buttons button').forEach(btn => btn.classList.remove('active'));
+
+        // отмечаем текущую
+        event.target.classList.add('active');
+
+        const today = new Date();
+        let filteredDates = [];
+        let filteredCounts = [];
+
+        allDates.forEach((d, i) => {
+            const date = new Date(d);
+            let include = false;
+
+            if (type === 'week') {
+                const weekAgo = new Date();
+                weekAgo.setDate(today.getDate() - 7);
+                include = date >= weekAgo;
+            } else if (type === 'month') {
+                const monthAgo = new Date();
+                monthAgo.setMonth(today.getMonth() - 1);
+                include = date >= monthAgo;
+            } else if (type === 'all') {
+                include = true;
+            }
+
+            if (include) {
+                filteredDates.push(d);
+                filteredCounts.push(allCounts[i]);
+            }
+        });
+
+        // обновляем график
+        wordsChart.data.labels = filteredDates;
+        wordsChart.data.datasets[0].data = filteredCounts;
+        wordsChart.update();
+
+        lineChart.data.labels = filteredDates;
+        lineChart.data.datasets[0].data = filteredCounts;
+        lineChart.update();
+    }
+
+    // по умолчанию — неделя
+    setFilter('week');
+</script>
+
+{% endblock %}

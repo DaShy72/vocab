@@ -1,0 +1,24 @@
+{% extends 'users/base.html' %}
+{% block content %}
+<div class="d-flex justify-content-center align-items-center vh-100">
+  <div class="card my-block text-white p-4" style="max-width: 400px; width: 100%; border-radius: 12px;">
+    <h2 class="mb-4 text-center fw-bold">Регистрация</h2>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% for field in form %}
+        <div class="mb-3">
+          <label for="{{ field.id_for_label }}" class="form-label fw-semibold">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}
+            <div class="text-danger small mt-1">{{ field.errors|striptags }}</div>
+          {% endif %}
+        </div>
+      {% endfor %}
+      <button type="submit" class="button w-100 fw-semibold py-2">Зарегистрироваться</button>
+    </form>
+    <p class="text-center mt-3 mb-0 small text-white">
+      Уже есть аккаунт? <a href="{% url 'users:login' %}" class="text-decoration-none text-danger">Войти</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

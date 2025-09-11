@@ -1,0 +1,409 @@
+{% extends 'words/base.html' %}
+{% block title %}Список слов{% endblock %}
+{% block content %}
+
+{% load static %}
+
+<style>
+.word-card {
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 15px;
+    padding-bottom: 30px;
+    color: white;
+    position: relative;
+    text-decoration: none;
+    display: block;
+    text-align: center;
+}
+.word-card.bg1 { background-color: #5bc0be; }
+.word-card.bg2 { background-color: #f3a712; }
+.word-card.bg3 { background-color: #ff4d6d; color: black; }
+
+.delete-btn {
+    position: absolute;
+    top: 20px;
+    right: 10px;
+    background: transparent;
+    color: #ff4d4f;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+    border-radius: 20%;
+    color: red;
+    font-weight: bold;
+}
+
+.word-text {
+    margin-top: 10px;
+    font-size: 4rem;
+    font-weight: bold;
+
+}
+
+.part-of-speech {
+    font-size: 1.5rem;
+    font-style: italic;
+    color: #a6ff4d;
+    margin-bottom: 1px;
+}
+
+.transcription {
+    font-size: 1.5rem;
+    color: #ffd700;
+    margin-bottom: 15px;
+}
+
+.confirm-panel {
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    width: 100%;              /* на всю ширину экрана */
+    max-width: 500px;         /* но не шире 500px */
+    height: auto;             /* высота под контент */
+    min-height: 120px;        /* но не меньше */
+    background: #1c2541;
+    box-shadow: 0 -4px 12px rgba(0,0,0,0.25);
+    padding: 20px;
+    z-index: 2000;
+
+    opacity: 0;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    pointer-events: none;
+}
+
+.confirm-panel.active {
+    left: 0;
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.confirm-panel.closing {
+    left: -320px;
+    opacity: 0;
+}
+
+.confirm-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.button {
+    display: inline-block;
+    padding: 5px 30px;
+    background: #1c2541;
+    color: #94a3b8;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: 0.3s;
+}
+
+.button:hover {
+    background: white;
+    color: black;
+    transform: scale(1.05);
+}
+
+.button-next {
+    display: inline-block;
+    padding: 20px 120px;
+    margin: 3px;
+    font-size: 1.5rem;
+    background: #1c2541;
+    color:#fff;
+    border-radius: 8px;
+    border-color: transparent;
+    text-decoration:none;
+    transition: 0.3s;
+}
+
+.translation-wrapper {
+    position: relative;
+    display: inline-block; /* под размер кнопки */
+}
+
+.show-btn {
+    background-color: transparent;
+    color: white;
+    border: 2px solid white;
+    padding: 7px 100px;
+    font-size: 1rem;
+    font-weight: 500;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text:center;
+}
+
+.show-btn:hover {
+    background-color: white;
+    color: black;
+    transform: scale(1.05);
+}
+
+.show-btn.hidden {
+    opacity: 0;
+    transform: scale(0.8);
+    pointer-events: none;
+}
+
+.translation {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    top: 0;
+
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: all 0.4s ease;
+    font-size: 2rem;
+    color: white;
+    background-color: transparent;
+    padding: 1px 14px;
+    border-radius: 8px;
+    pointer-events: none;
+}
+
+.translation.visible {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.delete-btn:hover {
+    background: #ff4d4f;
+    color: white;
+}
+
+.button-success{
+    display: inline-block;
+    padding: 7px 24px;
+    background: white;
+    color: black;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: 0.3s;
+}
+
+.button-success:hover {
+    background: white;
+    color: black;
+    transform: scale(1.05);
+}
+
+.button-danger{
+    background: #D7263D;
+    display: inline-block;
+    padding: 7px 24px;
+    color: black;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: 0.3s;v
+}
+.button-danger:hover {
+    background: white;
+    color: black;
+    transform: scale(1.05);
+}
+
+.visible {
+    pointer-events: none;
+}
+</style>
+
+<div class="row justify-content-center">
+    <div class="col-12 col-sm-12 col-md-8 col-lg-6">
+        <div class="row mb-2">
+            <div class="col-12 col-sm-12 col-lg-5">
+                <h5 class="mb-3 text-white">Quick Card<span class="text-danger">&nbsp;{{ count }}</span></h5>
+            </div>
+            <div class="col-6 col-sm-6 col-lg-4">
+                <button type="button" id="randomBtn" class="button">Random Card</button>
+            </div>
+            <div class="col-6 col-sm-6 col-lg-3 text-start mb-2">
+                <form method="post">
+                    {% csrf_token %}
+                    <button name="all_cards" class="button">All Card</button>
+                </form>
+            </div>
+        </div>
+
+
+
+        <div class="row">
+        {% for card in quick_card %}
+            {% cycle 'bg1' 'bg2' 'bg3' as bg_class silent %}
+            <div class="col-12">
+                <div class="word-card {{ bg_class }}">
+                    <!-- Кнопка удаления -->
+                    <button type="button" class="delete-btn"
+                            onclick="openConfirmPanel(event, {{ card.id }}, {{ card.word.id }})">❌</button>
+
+                    <!-- Вся кликабельная часть карточки -->
+                    <a href="{% url 'words:word_detail' card.word.id %}" style="display:block; text-decoration:none; color:inherit;">
+                        <!-- Слово -->
+                        <div class="word-text">{{ card.word.word }}</div>
+
+                        <!-- Part of speech -->
+                        <div class="part-of-speech">{{ card.word.part_of_speech }}</div>
+
+                        <!-- Транскрипция -->
+                        <div class="transcription">{{ card.word.transcription }}</div>
+
+
+
+                        <!-- Контейнер кнопки/перевода -->
+                        <div class="translation-wrapper">
+                            <button type="button" class="btn btn-sm show-btn" data-id="tr{{ card.id }}">
+                                Show translation
+                            </button>
+
+                            <div id="tr{{ card.id }}" class="translation">
+                                {{ card.translation }}
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        {% endfor %}
+        </div>
+        <div class="div mb-4 d-flex justify-content-center">
+            <button type="button" id="nextBtn" class="button-next">N&nbsp;&nbsp;&nbsp;E&nbsp;&nbsp;&nbsp;X&nbsp;&nbsp;&nbsp;T</button>
+        </div>
+
+
+        <!-- Секция подтверждения удаления -->
+        <div id="confirm-panel" class="confirm-panel">
+            <div class="confirm-content">
+                <p class="text-white">Это слово будет добавлено в выученные и удалено с быстрых карточек.</p>
+                <form method="post" id="delete-form" class="d-flex gap-2">
+                    {% csrf_token %}
+                    <input type="hidden" name="unmark" id="delete-word-id">
+                    <button type="submit" class="button-success flex-fill">Confirm</button>
+                    <button type="button" class="button-danger flex-fill" onclick="closeConfirmPanel()">Deny</button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+
+<script>
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.show-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            let trId = btn.getAttribute('data-id');
+            let trElem = document.getElementById(trId);
+
+            // скрываем кнопку
+            btn.classList.add('hidden');
+
+            // показываем перевод на месте кнопки
+            setTimeout(() => {
+                trElem.classList.add('visible');
+            }, 200);
+
+
+            // через 5 секунд возвращаем всё обратно
+            setTimeout(() => {
+                trElem.classList.remove('visible'); // скрываем перевод
+                btn.classList.remove('hidden');     // показываем кнопку
+            }, 5200);
+        });
+    });
+
+    document.querySelectorAll('.word-text').forEach(function(el) {
+        let parentWidth = el.parentElement.offsetWidth;
+        let fontSize = parseInt(window.getComputedStyle(el).fontSize);
+
+        while (el.scrollWidth > parentWidth && fontSize > 16) {
+            fontSize--;
+            el.style.fontSize = fontSize + "px";
+        }
+    });
+    document.querySelectorAll('.translation').forEach(function(el) {
+        let parentWidth = el.parentElement.offsetWidth;
+        let fontSize = parseInt(window.getComputedStyle(el).fontSize);
+
+        while (el.scrollWidth > parentWidth && fontSize > 16) {
+            fontSize--;
+            el.style.fontSize = fontSize + "px";
+        }
+    });
+});
+
+function openConfirmPanel(event, wordId, word) {
+    event.preventDefault();
+    event.stopPropagation();
+    const panel = document.getElementById("confirm-panel");
+    document.getElementById("delete-word-id").value = [wordId, word];
+    panel.classList.add("active");
+    panel.classList.remove("closing");
+}
+
+function closeConfirmPanel() {
+    const panel = document.getElementById("confirm-panel");
+    panel.classList.add("closing");
+    setTimeout(() => {
+        panel.classList.remove("active");
+        panel.classList.remove("closing");
+    }, 300); // совпадает с transition 0.3s
+}
+
+
+
+
+const cards = Array.from(document.querySelectorAll(".word-card"));
+let shuffled = [];
+let currentIndex = 0;
+
+  // Функция для перемешивания массива (алгоритм Фишера-Йетса)
+  function shuffle(array) {
+    let copy = [...array];
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  }
+
+  // Показать карточку по индексу
+  function showCard(index) {
+    cards.forEach(c => c.style.display = "none"); // скрыть все
+    if (shuffled[index]) {
+      shuffled[index].style.display = "block"; // показать одну
+    }
+  }
+
+  // При клике на Random
+  document.getElementById("randomBtn").addEventListener("click", () => {
+    shuffled = shuffle(cards);   // перемешали
+    currentIndex = 0;            // сброс на первую
+    showCard(currentIndex);      // показать первую
+  });
+
+  // При клике на Next
+  document.getElementById("nextBtn").addEventListener("click", () => {
+    if (shuffled.length === 0) return; // если ещё не жали Random
+    currentIndex++;
+    if (currentIndex >= shuffled.length) currentIndex = 0; // по кругу
+    showCard(currentIndex);
+  });
+
+</script>
+
+{% endblock %}
