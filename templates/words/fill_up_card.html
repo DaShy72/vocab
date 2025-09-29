@@ -5,8 +5,8 @@
 <div class="container mt-4">
     <div class="row justify-content-center text-center">
         <div class="col-12 col-sm-10 col-md-8 col-lg-6">
-            <div class="card p-3 my-block text-white">
-                <h3>{{ word.word }}</h3>
+            <div  class="card p-3 my-block text-white">
+                <h3 style="font-size: 2rem;" >{{ word.word }}</h3>
                 <form method="post" class="mt-3">
                     {% csrf_token %}
                     <label for="translation" class="form-label">Translation:</label>
